@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "CRT Tube",
+  "version": "1.1.0",
+  "description": "Watch YouTube through a curved, glowing CRT: barrel glass, scanlines, an RGB phosphor mask and bloom.",
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "action": {
+    "default_title": "CRT Tube",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["https://*.youtube.com/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://*.youtube.com/*"],
+    "js": ["crt.js"],
+    "css": ["crt.css"],
+    "run_at": "document_start"
+  }]
+}
