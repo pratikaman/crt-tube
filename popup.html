@@ -64,9 +64,28 @@
     inset: 0;
     background:
       radial-gradient(90% 70% at 28% 12%, rgba(255, 255, 255, 0.16), transparent 45%),
-      repeating-linear-gradient(rgba(0, 0, 0, 0.38) 0 1px, transparent 1px 3px),
-      radial-gradient(transparent 50%, rgba(0, 0, 0, 0.6));
+      repeating-linear-gradient(rgba(0, 0, 0, calc(0.38 * var(--i, 1))) 0 1px, transparent 1px 3px),
+      radial-gradient(transparent 50%, rgba(0, 0, 0, calc(0.6 * var(--i, 1))));
     box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85);
+  }
+  /* Preview of the rolling lines: the same band, sweeping the mini tube */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 45%;
+    z-index: 1;
+    opacity: 0;
+    background: linear-gradient(transparent, rgba(255, 255, 255, 0.12) 55%, rgba(255, 255, 255, 0.38) 86%, rgba(255, 255, 255, 0.5) 91%, transparent);
+    mix-blend-mode: screen; /* stronger than the page's overlay blend, so it reads at this size */
+  }
+  .tube.on.roll .glass::before {
+    opacity: 1;
+    animation: roll 2.6s linear infinite;
+  }
+  @keyframes roll {
+    from { translate: 0 -100%; }
+    to { translate: 0 230%; }
   }
   /* Transitions only after the stored state has painted, so the tube doesn't
      power-cycle every time the popup opens. Off: squash to a line, then a dot. */
@@ -158,8 +177,89 @@
   }
   body.ready .switch::after { transition: translate 0.25s, box-shadow 0.25s; }
 
+  /* Picture controls: a second outlined block on the panel, dimmed while the set is on LCD */
+  .panel {
+    margin-top: 10px;
+    padding: 11px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    background: #454641;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+    transition: opacity 0.2s;
+  }
+  .panel.off { opacity: 0.55; }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .row + .row { margin-top: 11px; }
+  .label {
+    font: 9px "CRT Michroma", sans-serif;
+    letter-spacing: 1.5px;
+    color: #c9cac2;
+  }
+
+  /* Intensity: the green volume bars every 90s TV put on screen, as a native range input */
+  #intensity {
+    appearance: none;
+    flex: 1;
+    height: 16px;
+    margin: 0;
+    padding: 3px;
+    border-radius: 3px;
+    background: #0b0d0b;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.85), 0 1px 0 rgba(255, 255, 255, 0.12);
+    filter: drop-shadow(0 0 3px rgba(80, 255, 120, 0.35));
+    cursor: pointer;
+  }
+  #intensity::-webkit-slider-runnable-track {
+    height: 10px;
+    background: linear-gradient(90deg, #5dff7a var(--fill, 50%), #1c3522 0);
+    -webkit-mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 0 6px);
+  }
+  #intensity::-webkit-slider-thumb {
+    appearance: none;
+    width: 1px;
+    height: 10px;
+  }
+
+  /* Rolling lines: a latching beige button with a green LED, like the PVM's UNDER SCAN */
+  .latch {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .cap {
+    width: 18px;
+    height: 13px;
+    border-radius: 2px;
+    background: linear-gradient(#ddd4bb, #b2a787);
+    box-shadow: 0 2px 0 #6f6650, 0 3px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+  .latch[aria-pressed="true"] .cap {
+    translate: 0 2px;
+    box-shadow: 0 0 0 #6f6650, 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  .led {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #203626;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+  }
+  .latch[aria-pressed="true"] .led {
+    background: #5dff7a;
+    box-shadow: 0 0 6px 1px rgba(93, 255, 122, 0.8);
+  }
+  body.ready .cap { transition: translate 0.1s, box-shadow 0.1s; }
+
   .mode:focus-visible,
-  .switch:focus-visible {
+  .switch:focus-visible,
+  .latch:focus-visible,
+  #intensity:focus-visible {
     outline: 2px solid #5ee07f;
     outline-offset: 2px;
     border-radius: 4px;
@@ -174,7 +274,8 @@
     84% { text-shadow: 0 0 12px rgba(70, 255, 120, 1); }
   }
   @media (prefers-reduced-motion: reduce) {
-    #crt.lit { animation: none; }
+    #crt.lit, .tube.on.roll .glass::before { animation: none; }
+    .tube.on.roll .glass::before { opacity: 0; }
     body.ready * { transition: none !important; }
   }
 
@@ -194,6 +295,16 @@
     <button class="mode" id="lcd" title="Flat panel: turn the tube off">LCD</button>
     <button class="switch" id="switch" role="switch" aria-checked="false" aria-label="CRT Tube"></button>
     <button class="mode" id="crt" title="Tube: turn the CRT look on">CRT</button>
+  </div>
+
+  <div class="panel" id="panel">
+    <label class="row">
+      <span class="label">INTENSITY</span>
+      <input type="range" id="intensity" min="0" max="100" step="5" value="50" />
+    </label>
+    <button class="row latch" id="roll" aria-pressed="false" title="Bands of light rolling down the tube">
+      <span class="cap"></span><span class="led"></span><span class="label">ROLLING LINES</span>
+    </button>
   </div>
 
   <p class="hint" id="hint"></p>

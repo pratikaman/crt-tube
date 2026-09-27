@@ -1,13 +1,15 @@
 /* The page is bent and re-lit by the SVG filter crt.js hangs on backdrop-filter.
-   This sheet adds what sits on the glass: glare, vignette, tube corners, power on/off. */
+   This sheet adds what sits on the glass: glare, vignette, tube corners, power on/off,
+   rolling lines. --crt-i is the intensity crt.js sets (1 = the menu's default). */
 #crt-screen {
+  --crt-i: 1;
   position: fixed;
   inset: 0;
   z-index: 2147483647;
   pointer-events: none;
   background:
-    radial-gradient(45% 35% at 30% 20%, rgb(255 255 255 / .045), transparent),
-    radial-gradient(transparent 55%, rgb(0 0 0 / .35));
+    radial-gradient(45% 35% at 30% 20%, rgb(255 255 255 / calc(.045 * var(--crt-i))), transparent),
+    radial-gradient(transparent 55%, rgb(0 0 0 / calc(.35 * var(--crt-i))));
 }
 
 /* Rounded tube corners + recessed-glass shadow. The same box is the slit the power animations squeeze. */
@@ -19,11 +21,24 @@
   width: 100%;
   height: 100%;
   translate: -50% -50%;
-  border-radius: 3.5vmin;
-  box-shadow: 0 0 0 100vmax #000, inset 0 0 6vmin rgb(0 0 0 / .55);
+  border-radius: calc(3.5vmin * var(--crt-i));
+  box-shadow: 0 0 0 100vmax #000, inset 0 0 6vmin rgb(0 0 0 / calc(.55 * var(--crt-i)));
 }
 #crt-screen.on::after { animation: crt-on .6s cubic-bezier(.2, .8, .3, 1) }
 #crt-screen.off::after { animation: crt-off .5s ease-in forwards }
+
+/* Rolling lines: a soft bright band sweeping down the tube, like a hum bar or a CRT seen on camera.
+   Overlay blend brightens what's lit and leaves black black. */
+#crt-screen[data-roll]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 35vh;
+  background: linear-gradient(transparent, rgb(255 255 255 / .08) 55%, rgb(255 255 255 / .22) 86%, rgb(255 255 255 / .3) 91%, transparent);
+  mix-blend-mode: overlay;
+  opacity: var(--crt-i);
+  animation: crt-roll 7s linear infinite;
+}
 
 @keyframes crt-on {
   0% { width: 0; height: 2px; background: #fff }
@@ -35,6 +50,11 @@
   85% { width: 4px; height: 2px; background: #fff }
   100% { width: 0; height: 0; background: #fff }
 }
+@keyframes crt-roll {
+  from { translate: 0 -35vh }
+  to { translate: 0 100vh }
+}
 @media (prefers-reduced-motion: reduce) {
   #crt-screen::after { animation-duration: 1ms !important }
+  #crt-screen[data-roll]::before { display: none }
 }

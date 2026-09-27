@@ -1,11 +1,16 @@
 // CRT mode for YouTube: one fixed overlay whose backdrop-filter bends and re-lights the page behind it.
 // Warp, aperture grille and bloom follow Timothy Lottes' crt-lottes shader (libretro/glsl-shaders).
 // SVG filters as backdrop-filter are Chrome-only (kube.io, "Liquid Glass in the Browser").
+// The constants below are the look at intensity 50; the menu's slider scales all of it.
 const WARP_X = 0.031, WARP_Y = 0.041; // Lottes defaults. Lower = flatter glass, and clicks near the edges land truer.
 const CONVERGENCE = 0.06; // red warps a little more, blue a little less: colour fringing toward the edges
 const GAIN = 1.25;        // makes up for the light the phosphor mask and scanlines take away
 const BLOOM = 0.25;       // halation: glow from bright areas that spills over the scanlines
 const NS = 'http://www.w3.org/2000/svg';
+
+// Intensity slider (0–100) → effect level: 0.2 (faint) at 0, 1 (the look above) at 50, 2 (heavy) at 100.
+const levelOf = v => v <= 50 ? 0.2 + 0.016 * v : v / 50;
+let level = 1;
 
 // One 3×3 px phosphor cell: R|G|B aperture-grille stripes (dark ≈ 0.8) under a scanline that dominates, as on a TV.
 const CELL = 'data:image/svg+xml,' + encodeURIComponent(
@@ -26,6 +31,8 @@ const add = (a, b, result) => svg('feComposite', { in: a, in2: b, operator: 'ari
 
 const map = svg('feImage', { x: 0, y: 0, preserveAspectRatio: 'none', result: 'map' });
 const guns = [0, 1, 2].map(() => svg('feDisplacementMap', { in: 'SourceGraphic', in2: 'map', xChannelSelector: 'R', yChannelSelector: 'G' }));
+const lit = svg('feComposite', { in: 'tube', in2: 'cells', operator: 'arithmetic', result: 'lit' }); // k1, k2 set by fit()
+const bloom = svg('feComposite', { in: 'lit', in2: 'glow', operator: 'arithmetic', k2: 1 });         // k3 set by fit()
 const filter = svg('filter', { id: 'crt-filter', 'color-interpolation-filters': 'sRGB' },
   map,
   ...guns.flatMap((gun, ch) => [gun, svg('feColorMatrix', { values: only(ch), result: 'c' + ch })]),
@@ -36,9 +43,9 @@ const filter = svg('filter', { id: 'crt-filter', 'color-interpolation-filters': 
   svg('feComposite', { in: 'rgb', in2: 'glass', operator: 'arithmetic', k1: 1, result: 'tube' }),
   svg('feImage', { href: CELL, x: 0, y: 0, width: 3, height: 3 }),
   svg('feTile', { result: 'cells' }),
-  svg('feComposite', { in: 'tube', in2: 'cells', operator: 'arithmetic', k1: GAIN, result: 'lit' }),
+  lit,
   svg('feGaussianBlur', { in: 'tube', stdDeviation: 3, result: 'glow' }),
-  svg('feComposite', { in: 'lit', in2: 'glow', operator: 'arithmetic', k2: 1, k3: BLOOM }));
+  bloom);
 
 const crt = document.createElement('div');
 crt.id = 'crt-screen';
@@ -49,13 +56,13 @@ crt.addEventListener('animationend', e => e.animationName === 'crt-off' && crt.r
 // Displacement map for the current viewport. Lottes' Warp(): screen point p shows the page at
 // p * (1 + p.yx² * warp). R/G store that offset in x/y (128 = none; s is the feDisplacementMap scale),
 // B is 255 while that point is still on the page, fading to 0 across one map pixel at the tube's edge.
-function warpMap(w, h, s) {
+function warpMap(w, h, wx, wy, s) {
   const c = document.createElement('canvas');
   c.width = Math.ceil(w / 4); c.height = Math.ceil(h / 4); // smooth field, quarter resolution is plenty
   const img = new ImageData(c.width, c.height), d = img.data;
   for (let j = 0, o = 0; j < c.height; j++) for (let i = 0; i < c.width; i++, o += 4) {
     const x = (i + 0.5) / c.width * 2 - 1, y = (j + 0.5) / c.height * 2 - 1;
-    const sx = x * (1 + y * y * WARP_X), sy = y * (1 + x * x * WARP_Y);
+    const sx = x * (1 + y * y * wx), sy = y * (1 + x * x * wy);
     d[o] = 127.5 + 127.5 * (sx - x) * w / s;
     d[o + 1] = 127.5 + 127.5 * (sy - y) * h / s;
     d[o + 2] = 255 * (0.5 + Math.min((1 - Math.abs(sx)) * c.width, (1 - Math.abs(sy)) * c.height) / 2);
@@ -66,11 +73,17 @@ function warpMap(w, h, s) {
 }
 
 function fit() {
-  const w = crt.clientWidth, h = crt.clientHeight, s = Math.max(WARP_X * w, WARP_Y * h);
+  const w = crt.clientWidth, h = crt.clientHeight, wx = WARP_X * level, wy = WARP_Y * level;
+  const s = Math.max(wx * w, wy * h);
   map.setAttribute('width', w);
   map.setAttribute('height', h);
-  map.setAttribute('href', warpMap(w, h, s));
+  map.setAttribute('href', warpMap(w, h, wx, wy, s));
   guns.forEach((gun, ch) => gun.setAttribute('scale', s * (1 + CONVERGENCE * (1 - ch))));
+  // Mask and scanlines fade in with the level: lit = tube × (level·GAIN·cells + 1 − level). So does the glow.
+  lit.setAttribute('k1', GAIN * level);
+  lit.setAttribute('k2', 1 - level);
+  bloom.setAttribute('k3', BLOOM * level);
+  crt.style.setProperty('--crt-i', Math.min(level, 1.5)); // glass shading and rolling lines in crt.css
 }
 
 // Fullscreen video lives in the top layer, so the overlay has to follow it in there.
@@ -84,6 +97,15 @@ function power(on) {
 addEventListener('resize', () => crt.isConnected && fit());
 document.addEventListener('fullscreenchange', () => crt.isConnected && host().append(crt));
 document.getElementById('crt-screen')?.remove(); // left behind by a copy of this script cut off by an extension reload
-chrome.storage.sync.get({ on: false }, s => power(s.on));
-chrome.storage.onChanged.addListener((c, area) => area === 'sync' && c.on && power(!!c.on.newValue));
+chrome.storage.sync.get({ on: false, intensity: 50, roll: false }, s => {
+  level = levelOf(s.intensity);
+  crt.toggleAttribute('data-roll', s.roll);
+  power(s.on);
+});
+chrome.storage.onChanged.addListener((c, area) => {
+  if (area !== 'sync') return;
+  if (c.intensity) { level = levelOf(c.intensity.newValue ?? 50); if (crt.isConnected) fit(); }
+  if (c.roll) crt.toggleAttribute('data-roll', !!c.roll.newValue);
+  if (c.on) power(!!c.on.newValue);
+});
 chrome.runtime.onMessage.addListener((msg, _, reply) => msg?.type === 'crt-ping' && reply({ pong: true })); // popup's tab check

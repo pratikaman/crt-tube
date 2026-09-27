@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CRT Tube",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Watch YouTube through a curved, glowing CRT: barrel glass, scanlines, an RGB phosphor mask and bloom.",
   "icons": {
     "16": "assets/icon16.png",

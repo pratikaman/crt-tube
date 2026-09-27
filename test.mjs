@@ -42,6 +42,16 @@ assert(topMiddle > 150, `on: top middle should still show the white band, got ${
 assert(bandAtCentre < 50 && bandNearEdge > 90,
   `on: barrel warp should bow the band's lower edge down toward the sides (centre ${bandAtCentre}, edge ${bandNearEdge})`);
 
+// Full intensity bends the glass twice as hard, pushing that edge further down.
+const [belowEdge] = await light([100, 96]);
+await popup.fill('#intensity', '100');
+await page.waitForTimeout(1000);
+const [belowEdgeAtFull] = await light([100, 96]);
+assert(belowEdge < 50 && belowEdgeAtFull > 90, `intensity: 100 should warp harder than 50 (${belowEdge} → ${belowEdgeAtFull})`);
+
+await popup.click('#roll');
+assert(await page.evaluate(() => document.getElementById('crt-screen').hasAttribute('data-roll')), 'rolling lines: overlay should roll');
+
 await popup.click('#lcd');
 await page.waitForTimeout(1500); // power-off animation, then the overlay removes itself
 assert.equal(await page.evaluate(() => document.getElementById('crt-screen')), null, 'off: overlay should be gone');
