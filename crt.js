@@ -74,6 +74,7 @@ function warpMap(w, h, wx, wy, s) {
 
 function fit() {
   const w = crt.clientWidth, h = crt.clientHeight, wx = WARP_X * level, wy = WARP_Y * level;
+  if (!w || !h) return; // A native view can mount before its first layout.
   const s = Math.max(wx * w, wy * h);
   map.setAttribute('width', w);
   map.setAttribute('height', h);
@@ -95,17 +96,29 @@ function power(on) {
 }
 
 addEventListener('resize', () => crt.isConnected && fit());
+new ResizeObserver(() => crt.isConnected && fit()).observe(crt);
 document.addEventListener('fullscreenchange', () => crt.isConnected && host().append(crt));
 document.getElementById('crt-screen')?.remove(); // left behind by a copy of this script cut off by an extension reload
-chrome.storage.sync.get({ on: false, intensity: 50, roll: false }, s => {
+function applySettings(s) {
   level = levelOf(s.intensity);
   crt.toggleAttribute('data-roll', s.roll);
-  power(s.on);
-});
-chrome.storage.onChanged.addListener((c, area) => {
-  if (area !== 'sync') return;
-  if (c.intensity) { level = levelOf(c.intensity.newValue ?? 50); if (crt.isConnected) fit(); }
-  if (c.roll) crt.toggleAttribute('data-roll', !!c.roll.newValue);
-  if (c.on) power(!!c.on.newValue);
-});
-chrome.runtime.onMessage.addListener((msg, _, reply) => msg?.type === 'crt-ping' && reply({ pong: true })); // popup's tab check
+  if (s.on && (!crt.isConnected || crt.className === 'off')) power(true);
+  else if (!s.on && crt.isConnected && crt.className !== 'off') power(false);
+  else if (crt.isConnected) fit();
+}
+
+// The desktop host installs this adapter in an isolated world; the extension keeps
+// using Chrome storage. Both applications render the exact same glass shader.
+if (globalThis.__crtTubeDesktop) {
+  globalThis.__crtTubeDesktop.update = applySettings;
+  applySettings(globalThis.__crtTubeDesktop.settings);
+} else {
+  chrome.storage.sync.get({ on: false, intensity: 50, roll: false }, applySettings);
+  chrome.storage.onChanged.addListener((c, area) => {
+    if (area !== 'sync') return;
+    if (c.intensity) { level = levelOf(c.intensity.newValue ?? 50); if (crt.isConnected) fit(); }
+    if (c.roll) crt.toggleAttribute('data-roll', !!c.roll.newValue);
+    if (c.on) power(!!c.on.newValue);
+  });
+  chrome.runtime.onMessage.addListener((msg, _, reply) => msg?.type === 'crt-ping' && reply({ pong: true }));
+}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="case" x2=".7" y2="1"><stop stop-color="#e9e2cb"/><stop offset=".6" stop-color="#d2ceb7"/><stop offset="1" stop-color="#b9bca3"/></linearGradient>
+<linearGradient id="rim" x2=".6" y2="1"><stop stop-color="#909682"/><stop offset=".5" stop-color="#b5baa0"/><stop offset="1" stop-color="#f4efd6"/></linearGradient>
+<radialGradient id="glass" cx=".35" cy=".25" r=".8"><stop stop-color="#394333"/><stop offset="1" stop-color="#12190f"/></radialGradient>
+<linearGradient id="rainbow" x2="0" y2="1"><stop stop-color="#78a055"/><stop offset=".166" stop-color="#78a055"/><stop offset=".166" stop-color="#d8bd58"/><stop offset=".332" stop-color="#d8bd58"/><stop offset=".332" stop-color="#cf9850"/><stop offset=".5" stop-color="#cf9850"/><stop offset=".5" stop-color="#ba6054"/><stop offset=".664" stop-color="#ba6054"/><stop offset=".664" stop-color="#977198"/><stop offset=".83" stop-color="#977198"/><stop offset=".83" stop-color="#6c96ae"/></linearGradient>
+<pattern id="scan" width="4" height="7" patternUnits="userSpaceOnUse"><path d="M0 0h4v2H0" fill="#000" opacity=".23"/></pattern>
+<filter id="shadow" x="-.3" y="-.2" width="1.6" height="1.5"><feDropShadow dx="0" dy="16" stdDeviation="19" flood-opacity=".28"/></filter>
+</defs>
+<g filter="url(#shadow)">
+<rect x="178" y="66" width="668" height="860" rx="48" fill="url(#case)" stroke="#f0ecd6" stroke-width="3"/>
+<path d="M181 864h662v40q0 36-36 36H217q-36 0-36-36z" fill="#b9bda3" stroke="#939b7e"/>
+<rect x="221" y="116" width="582" height="546" rx="34" fill="url(#rim)"/>
+<rect x="245" y="141" width="534" height="496" rx="48" fill="#11190d"/>
+<rect x="257" y="153" width="510" height="472" rx="43" fill="url(#glass)"/>
+<text x="506" y="381" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="97" fill="#c9d0b4">hello.</text>
+<path d="m489 423 46 26-46 26z" fill="#97b479"/>
+<rect x="257" y="153" width="510" height="472" rx="43" fill="url(#scan)"/>
+<path d="M275 182q235-31 474 0" fill="none" stroke="#b6c0a3" stroke-opacity=".1" stroke-width="7"/>
+<rect x="236" y="703" width="27" height="34" rx="3" fill="url(#rainbow)"/>
+<text x="278" y="729" font-family="Georgia,serif" font-size="30" fill="#68705d">CRT Tube</text>
+<rect x="476" y="758" width="308" height="14" rx="3" fill="#3c4932" stroke="#959e82" stroke-width="2"/>
+<rect x="733" y="789" width="48" height="12" rx="3" fill="#b1ba9a" stroke="#7e8f68"/>
+<g stroke="#7c886a" stroke-width="3"><path d="M238 770h136m-136 10h136m-136 10h136m-136 10h136m-136 10h136"/></g>
+<circle cx="788" cy="719" r="4" fill="#7c9760"/>
+<path d="M197 894h630" stroke="#dee1c5" stroke-width="2"/>
+</g>
+</svg>

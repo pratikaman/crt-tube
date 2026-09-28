@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>CRT Tube</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="renderer.js" defer></script>
+</head>
+<body>
+  <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M6 9v11h12V9M10 20v-7h4v7"/></symbol>
+    <symbol id="i-reload" viewBox="0 0 24 24"><path d="M20 7v5h-5M19 12a7 7 0 1 0-2 5M20 12l-3-5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 4 5 9H2v6h3l6 5zM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 4 5 9H2v6h3l6 5zM16 9l6 6m0-6-6 6"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10M7 5a9 9 0 1 0 10 0"/></symbol>
+  </svg>
+  <main class="desktop-stage" aria-label="Macintosh Plus YouTube player">
+    <div class="scene" id="scene">
+      <div class="render-holder"><img class="model-render" src="assets/macintosh-plus-render.png" alt="A beige Macintosh Plus, keyboard and mouse" draggable="false"></div>
+      <div class="case-drag case-top" title="Drag the Macintosh to move it"></div>
+      <div class="case-drag case-left"></div><div class="case-drag case-right"></div>
+      <div class="case-drag case-chin" title="Drag the Macintosh to move it"></div><div class="case-drag case-bottom"></div>
+      <section class="screen-bezel" aria-label="Macintosh CRT screen">
+        <div class="screen-well">
+          <div id="screen-slot">
+            <div class="standby-glass" id="standby">
+              <div class="test-pattern" aria-hidden="true"><div class="color-bars"></div><div class="lower-bars"></div><div class="black-bars"></div></div>
+              <div class="signal-message" role="status">
+                <div class="signal-brand">CRT TUBE</div>
+                <h1 id="signal-title">TUNING IN...</h1>
+                <p id="signal-detail">Warming up the picture.</p>
+                <button id="retry" class="signal-retry" hidden>RETUNE ↵</button>
+              </div>
+            </div>
+            <section class="remote" id="controls" aria-label="YouTube and CRT controls" hidden>
+              <div class="panel-title"><span>CRT TUBE</span><button id="close-controls" class="panel-close" aria-label="Return to video">DONE</button></div>
+              <form id="tune-form" class="tuner">
+                <input id="search" type="text" aria-label="Search YouTube or paste a link" placeholder="Search YouTube / paste a link" autocomplete="off" spellcheck="false" maxlength="2048"><button type="submit" id="tune-button" aria-label="Search YouTube">↵</button>
+              </form>
+              <div class="navigation-module">
+                <button class="key" id="back" title="Back (⌘[)" aria-label="Back" disabled><svg><use href="#i-back"/></svg></button>
+                <button class="key" id="home" title="YouTube home (⌘⇧H)" aria-label="YouTube home"><svg><use href="#i-home"/></svg></button>
+                <button class="key" id="forward" title="Forward (⌘])" aria-label="Forward" disabled><svg><use href="#i-next"/></svg></button>
+                <button class="key" id="reload" title="Retune (⌘R)" aria-label="Reload YouTube"><svg><use href="#i-reload"/></svg></button>
+                <span class="spacer"></span>
+                <button class="key" id="mute" aria-label="Mute audio" aria-pressed="false"><svg><use id="volume-icon" href="#i-volume"/></svg></button>
+                <button class="key" id="screen-zoom" title="Enlarge screen (⌘⇧Z)" aria-label="Enlarge screen" aria-pressed="false"><svg><use href="#i-expand"/></svg></button>
+                <button id="power" class="key" aria-label="Power off" aria-pressed="true" title="Power (⌘⇧P)"><svg><use href="#i-power"/></svg></button>
+              </div>
+              <div class="slider-row"><label for="volume">VOLUME</label><input id="volume" class="meter" type="range" min="0" max="100" step="1" value="70" aria-label="Volume"><output id="volume-value">70</output></div>
+              <div class="slider-row"><label for="intensity">PICTURE</label><input id="intensity" class="meter" type="range" min="0" max="100" step="5" value="35" aria-label="CRT intensity"><output id="intensity-value">35</output></div>
+              <div class="toggles">
+                <button class="text-toggle" id="crt-toggle" aria-label="CRT effect" aria-pressed="true">CRT<i></i></button>
+                <button class="text-toggle" id="roll-toggle" aria-label="Rolling scanlines" aria-pressed="false">ROLL<i></i></button>
+                <span class="panel-hint">ESC TO WATCH</span>
+              </div>
+            </section>
+            <div class="power-line" aria-hidden="true"></div>
+          </div>
+        </div>
+      </section>
+      <button id="physical-mouse" class="object-hotspot mouse-hotspot" aria-label="Play or pause video" title="Play / pause"></button>
+      <button id="physical-keyboard" class="object-hotspot keyboard-hotspot" aria-label="Open YouTube search" title="Search YouTube (⌘L)"></button>
+      <button id="physical-disk" class="object-hotspot disk-hotspot" aria-label="Insert a YouTube link" title="Insert a YouTube link"></button>
+      <button id="physical-power" class="object-hotspot logo-hotspot" aria-label="Power off" title="Power (⌘⇧P)"></button>
+      <button id="resize-grip" class="resize-grip" aria-label="Resize Macintosh" aria-description="Drag to resize. Arrow keys make it larger or smaller. Double-click to reset." title="Drag to resize · Double-click to reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 19 12-12M13 19l6-6"/></svg></button>
+    </div>
+  </main>
+</body>
+</html>

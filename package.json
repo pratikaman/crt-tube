@@ -1,0 +1,36 @@
+{
+  "name": "crt-tube-desktop",
+  "productName": "CRT Tube",
+  "version": "1.0.0",
+  "description": "YouTube in an old-school CRT television for macOS.",
+  "author": "CRT Tube",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test desktop/test/core.test.cjs && node desktop/test/app.test.mjs",
+    "test:extension": "node test.mjs",
+    "pack:mac": "electron-builder --mac --dir",
+    "dist:mac": "electron-builder --mac dmg zip",
+    "dist:mac:intel": "electron-builder --mac dmg zip --x64"
+  },
+  "devDependencies": {
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3",
+    "playwright": "1.63.0"
+  },
+  "build": {
+    "appId": "com.crttube.desktop",
+    "productName": "CRT Tube",
+    "directories": { "output": "release" },
+    "files": ["desktop/**", "!desktop/test/**", "crt.js", "crt.css", "fonts/**", "assets/icon*.png", "package.json"],
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "icon": "desktop/icon.icns",
+      "target": ["dmg", "zip"],
+      "darkModeSupport": true,
+      "identity": null
+    },
+    "dmg": { "title": "CRT Tube", "window": { "width": 540, "height": 380 } }
+  }
+}

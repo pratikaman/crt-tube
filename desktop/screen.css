@@ -1,0 +1,35 @@
+/* The inset glass stays rounded even in clean-picture mode. */
+html { color-scheme: dark; background: #0b0d0b !important; }
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  border-radius: 5vmin;
+  box-shadow: 0 0 0 100vmax #090b09, inset 0 0 14px 3px #0008;
+  pointer-events: none;
+}
+/* Fullscreen needs the same physical glass. The CRT overlay follows the top layer. */
+#crt-screen::after { border-radius: 5vmin; }
+
+/* Give the small physical CRT to the video; YouTube's own controls, captions, ads,
+   and overlays remain in its player. Search / home retain the normal YouTube UI. */
+html[data-tube-watch] body { overflow: hidden !important; }
+html[data-tube-watch] #masthead-container,
+html[data-tube-watch] #secondary,
+html[data-tube-watch] #below { display: none !important; }
+html[data-tube-watch] #movie_player {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483640 !important;
+}
+html[data-tube-watch] #movie_player .html5-video-container,
+html[data-tube-watch] #movie_player video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
