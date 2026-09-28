@@ -4,11 +4,22 @@ YouTube with curved glass, scanlines, and a little nostalgia.
 
 A floating Macintosh for your desktop. A CRT switch for your browser. Use either, or both.
 
-![YouTube through the CRT Tube Chrome extension](assets/screenshot.jpg)
+## Install with a prompt
+
+Paste this into your coding assistant:
+
+```text
+Install CRT Tube from https://github.com/pratikaman/crt-tube.
+Ask whether I want the Mac app, Chrome extension, or both.
+Clone or reuse the repository, follow its README to set up
+my choice, and help me open it.
+```
 
 ## Mac app
 
 A tiny beige Macintosh that lives on your desktop — keyboard, mouse, and all.
+
+<img src="assets/mac-app.png" width="520" alt="CRT Tube Mac app playing YouTube inside a floating Macintosh Plus">
 
 **Install:** clone or download this repository, then run these commands in its folder.
 You'll need macOS and Node.js 22.12+.
@@ -33,6 +44,8 @@ Just want to try it? Run `npm start` after `npm ci`.
 ## Chrome extension
 
 The same CRT glow, right inside YouTube. No build step needed.
+
+![YouTube through the CRT Tube Chrome extension](assets/screenshot.jpg)
 
 1. Clone or download this repository and extract it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
@@ -64,4 +77,4 @@ For an Intel Mac build, use `npm run dist:mac:intel` (untested).
 
 Macintosh model by **Deutsches Museum | Digital**, CC BY-SA 4.0. [Asset credits](desktop/ASSET_CREDITS.md).
 CRT inspiration: Timothy Lottes, Lucas Bebber, Alec Lownes, kube.io, and Xor.
-Screenshot: *Big Buck Bunny* © Blender Foundation, CC BY 3.0.
+Screenshots: *Big Buck Bunny* © Blender Foundation, CC BY 3.0.
