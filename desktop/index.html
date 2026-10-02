@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>CRT Tube</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="scene.bundle.js" defer></script>
   <script src="renderer.js" defer></script>
 </head>
 <body>
@@ -22,6 +23,7 @@
   <main class="desktop-stage" aria-label="Macintosh Plus YouTube player">
     <div class="scene" id="scene">
       <div class="render-holder"><img class="model-render" src="assets/macintosh-plus-render.png" alt="A beige Macintosh Plus, keyboard and mouse" draggable="false"></div>
+      <canvas id="model-canvas" aria-label="Original Macintosh museum model. Drag or use arrow keys to rotate. Escape or double-click returns to the screen." title="Drag to rotate · Double-click or Esc to watch"></canvas>
       <div class="case-drag case-top" title="Drag the Macintosh to move it"></div>
       <div class="case-drag case-left"></div><div class="case-drag case-right"></div>
       <div class="case-drag case-chin" title="Drag the Macintosh to move it"></div><div class="case-drag case-bottom"></div>
@@ -69,6 +71,7 @@
       <button id="physical-disk" class="object-hotspot disk-hotspot" aria-label="Insert a YouTube link" title="Insert a YouTube link"></button>
       <button id="physical-power" class="object-hotspot logo-hotspot" aria-label="Power off" title="Power (⌘⇧P)"></button>
       <button id="resize-grip" class="resize-grip" aria-label="Resize Macintosh" aria-description="Drag to resize. Arrow keys make it larger or smaller. Double-click to reset." title="Drag to resize · Double-click to reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 19 12-12M13 19l6-6"/></svg></button>
+      <button id="rotate-mode" class="rotate-mode" aria-label="Rotate Macintosh" aria-pressed="false" title="Rotate in 3D"><svg aria-hidden="true"><use href="#i-reload"/></svg><span id="rotate-label">ROTATE</span></button>
     </div>
   </main>
 </body>

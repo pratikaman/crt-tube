@@ -9,6 +9,14 @@ contextBridge.exposeInMainWorld('tube', {
   settings: patch => ipcRenderer.invoke('tube:settings', patch),
   setScreen: bounds => ipcRenderer.send('tube:screen', bounds),
   setScene: bounds => ipcRenderer.send('tube:scene', bounds),
+  setHitMask: mask => ipcRenderer.send('tube:hit-mask', mask),
+  orbitGesture: active => ipcRenderer.send('tube:orbit-gesture', active),
+  captureScreen: () => ipcRenderer.invoke('tube:capture-screen'),
+  onInspect: callback => {
+    const listener = () => callback();
+    ipcRenderer.on('tube:inspect', listener);
+    return () => ipcRenderer.removeListener('tube:inspect', listener);
+  },
   resize: input => ipcRenderer.send('tube:resize', input),
   onToggleZoom: callback => {
     const listener = () => callback();

@@ -36,6 +36,11 @@ Just want to try it? Run `npm start` after `npm ci`.
 - **Click the mouse** to play or pause.
 - **Drag the beige case** to move it. Drag the keyboard's lower-right grip to resize.
 - **Click the rainbow badge** to turn the screen on or off.
+- **Hover over the Macintosh and click Rotate** to turn the same museum Macintosh
+  in 3D. Drag or use the arrow keys; `Home` resets the angle. Click **Done**, press
+  `Esc`, or double-click to return to the player. `⌘⇧3` and **TV → Rotate Macintosh**
+  also work. The screen shows a lightweight live
+  preview while rotating; direct YouTube interaction resumes in the front view.
 
 `⌘+` / `⌘−` resize · `⌘0` resets size · `Esc` closes the controls
 
@@ -60,6 +65,9 @@ Keep the repository folder around while the extension is installed.
 
 The Mac app lives in `desktop/`; the extension lives at the root.
 Both share `crt.js` and `crt.css`.
+The optional 3D view uses the original museum GLB, bundled locally. `npm start`,
+`npm test`, and the packaging scripts build `desktop/scene3d.js` with esbuild.
+The normal UI and its original rendered image are preserved.
 
 After `npm ci`:
 

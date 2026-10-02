@@ -2,3 +2,5 @@ node_modules/
 release/
 test-results/
 .DS_Store
+desktop/scene.bundle.js
+desktop/scene.bundle.js.LEGAL.txt

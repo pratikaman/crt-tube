@@ -13,4 +13,18 @@ function createSilhouette(image) {
   };
 }
 
-module.exports = { createSilhouette };
+function createMaskSilhouette(mask) {
+  if (!mask || !Number.isInteger(mask.width) || !Number.isInteger(mask.height) ||
+      mask.width < 1 || mask.height < 1 || mask.width > 256 || mask.height > 256 ||
+      !(mask.pixels instanceof Uint8Array) || mask.pixels.length !== mask.width * mask.height) return null;
+  const { width, height } = mask;
+  const pixels = Uint8Array.from(mask.pixels);
+  return (point, bounds) => {
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
+    const x = Math.floor((point.x - bounds.x) * width / bounds.width);
+    const y = Math.floor((point.y - bounds.y) * height / bounds.height);
+    return x >= 0 && x < width && y >= 0 && y < height && pixels[y * width + x] >= 64;
+  };
+}
+
+module.exports = { createSilhouette, createMaskSilhouette };

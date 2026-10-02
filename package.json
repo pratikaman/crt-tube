@@ -12,25 +12,52 @@
     "test:extension": "node test.mjs",
     "pack:mac": "electron-builder --mac --dir",
     "dist:mac": "electron-builder --mac dmg zip",
-    "dist:mac:intel": "electron-builder --mac dmg zip --x64"
+    "dist:mac:intel": "electron-builder --mac dmg zip --x64",
+    "build": "esbuild desktop/scene3d.js --bundle --minify --legal-comments=linked --outfile=desktop/scene.bundle.js",
+    "prestart": "npm run build",
+    "pretest": "npm run build",
+    "prepack:mac": "npm run build",
+    "predist:mac": "npm run build",
+    "predist:mac:intel": "npm run build"
   },
   "devDependencies": {
     "electron": "44.4.5",
     "electron-builder": "26.15.3",
-    "playwright": "1.63.0"
+    "esbuild": "0.25.10",
+    "playwright": "1.63.0",
+    "three": "0.180.0"
   },
   "build": {
     "appId": "com.crttube.desktop",
     "productName": "CRT Tube",
-    "directories": { "output": "release" },
-    "files": ["desktop/**", "!desktop/test/**", "crt.js", "crt.css", "fonts/**", "assets/icon*.png", "package.json"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**",
+      "!desktop/test/**",
+      "crt.js",
+      "crt.css",
+      "fonts/**",
+      "assets/icon*.png",
+      "package.json"
+    ],
     "mac": {
       "category": "public.app-category.entertainment",
       "icon": "desktop/icon.icns",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "darkModeSupport": true,
       "identity": null
     },
-    "dmg": { "title": "CRT Tube", "window": { "width": 540, "height": 380 } }
+    "dmg": {
+      "title": "CRT Tube",
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    }
   }
 }

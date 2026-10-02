@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { HOME, DEFAULTS, destination, isAllowedNavigation, isYouTubeURL, sanitizeSettings } = require('../core.cjs');
+const { createMaskSilhouette } = require('../silhouette.cjs');
 
 test('tuning accepts YouTube links, short links, and ordinary searches', () => {
   assert.equal(destination(''), HOME);
@@ -28,4 +29,23 @@ test('settings tolerate corrupt files and reject unknown or untrusted values', (
   assert.equal(updated.intensity, 0);
   assert.equal(updated.roll, true);
   assert.deepEqual(sanitizeSettings({ muted: true }, updated), { ...updated, muted: true });
+});
+
+test('3D masks follow the rotated outline and reject invalid IPC payloads', () => {
+  const pixels = new Uint8Array([0, 255, 63, 64]);
+  const hits = createMaskSilhouette({ width: 2, height: 2, pixels });
+  const bounds = { x: 40, y: 20, width: 200, height: 100 };
+  assert.equal(hits({ x: 50, y: 30 }, bounds), false);
+  assert.equal(hits({ x: 200, y: 30 }, bounds), true);
+  assert.equal(hits({ x: 50, y: 90 }, bounds), false);
+  assert.equal(hits({ x: 200, y: 90 }, bounds), true);
+  assert.equal(hits({ x: 240, y: 50 }, bounds), false);
+  assert.equal(hits({ x: 200, y: 120 }, bounds), false);
+  pixels.fill(0);
+  assert.equal(hits({ x: 200, y: 30 }, bounds), true, 'mask owns its buffer');
+  assert.equal(hits({ x: 100, y: 25 }, { x: 0, y: 0, width: 120, height: 60 }), true);
+  for (const mask of [null, {}, { width: 257, height: 1, pixels: new Uint8Array(257) },
+    { width: 2, height: 2, pixels: [0, 255, 255, 0] }, { width: 2, height: 2, pixels: new Uint8Array(3) }]) {
+    assert.equal(createMaskSilhouette(mask), null);
+  }
 });

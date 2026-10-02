@@ -3,6 +3,18 @@ const $ = id => document.getElementById(id);
 const api = window.tube;
 let current = null;
 let screenFocused = false;
+let preparing3D = false;
+
+function updateRotateButton() {
+  const active = !!current?.inspecting;
+  $('rotate-mode').hidden = screenFocused || !api;
+  $('rotate-mode').disabled = preparing3D;
+  $('rotate-mode').setAttribute('aria-busy', String(preparing3D));
+  $('rotate-mode').setAttribute('aria-pressed', String(active));
+  $('rotate-mode').setAttribute('aria-label', preparing3D ? 'Loading 3D model' : active ? 'Done rotating' : 'Rotate Macintosh');
+  $('rotate-mode').title = active ? 'Return to video' : 'Rotate in 3D';
+  $('rotate-label').textContent = preparing3D ? 'LOADING' : active ? 'DONE' : 'ROTATE';
+}
 
 function layoutScene() {
   const { width, height } = document.querySelector('.desktop-stage').getBoundingClientRect();
@@ -11,6 +23,7 @@ function layoutScene() {
   scene.style.setProperty('--scene-scale', scale);
   scene.style.setProperty('--scene-x', screenFocused ? `${(410 - 339.5) * scale}px` : '0px');
   scene.style.setProperty('--scene-y', screenFocused ? `${(345 - 211.5) * scale}px` : '0px');
+  window.macintosh3D?.refresh();
   if (api) reportScreen();
 }
 
@@ -21,6 +34,7 @@ function toggleZoom() {
   $('resize-grip').hidden = screenFocused || current?.fullscreen;
   $('screen-zoom').setAttribute('aria-pressed', String(screenFocused));
   $('screen-zoom').setAttribute('aria-label', screenFocused ? 'Show whole Macintosh' : 'Enlarge screen');
+  updateRotateButton();
   layoutScene();
 }
 
@@ -39,7 +53,9 @@ function render(state) {
     document.body.classList.add('powering-off');
   }
   const openingControls = state.controlsOpen && !current?.controlsOpen;
+  if (state.inspecting !== current?.inspecting) window.macintosh3D?.setActive(state.inspecting);
   current = state;
+  updateRotateButton();
   $('resize-grip').hidden = state.fullscreen || screenFocused;
   document.body.classList.toggle('is-off', !state.powered);
   $('controls').hidden = !state.controlsOpen;
@@ -69,7 +85,9 @@ function reportScreen() {
   const { x, y, width, height } = $('screen-slot').getBoundingClientRect();
   api.setScreen({ x, y, width, height });
   const scene = $('scene').getBoundingClientRect();
-  api.setScene({ x: scene.x, y: scene.y, width: scene.width, height: scene.height });
+  const control = $('rotate-mode').hidden ? null : $('rotate-mode').getBoundingClientRect();
+  api.setScene({ x: scene.x, y: scene.y, width: scene.width, height: scene.height,
+    rotateControl: control && { x: control.x, y: control.y, width: control.width, height: control.height } });
 }
 
 if (api) {
@@ -80,8 +98,21 @@ if (api) {
   layoutScene();
   api.onFocusSearch(() => { $('search').focus(); $('search').select(); });
   api.onToggleZoom(toggleZoom);
+  api.onInspect(async () => {
+    if (preparing3D) return;
+    preparing3D = true;
+    updateRotateButton();
+    try {
+      await window.macintosh3D.prepare();
+      if (screenFocused) toggleZoom();
+      await api.command('show-3d');
+    } catch (error) {
+      console.warn('Could not open the original 3D model. The Macintosh remains in front view.', error);
+    } finally { preparing3D = false; updateRotateButton(); }
+  });
   api.onEscape(() => {
-    if (screenFocused) toggleZoom();
+    if (current?.inspecting) api.command('front-view');
+    else if (screenFocused) toggleZoom();
     else if (current?.fullscreen) api.command('fullscreen');
   });
   $('physical-keyboard').addEventListener('click', focusSearch);
@@ -90,6 +121,7 @@ if (api) {
   $('physical-power').addEventListener('click', () => api.command('power'));
   $('screen-zoom').addEventListener('click', () => api.command('zoom'));
   $('close-controls').addEventListener('click', closeControls);
+  $('rotate-mode').addEventListener('click', () => api.command(current?.inspecting ? 'front-view' : 'inspect'));
   const grip = $('resize-grip');
   let resizePointer = null;
   function finishResize() {
@@ -141,13 +173,18 @@ if (api) {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       finishResize();
-      if (current?.controlsOpen) closeControls();
+      if (current?.inspecting) api.command('front-view');
+      else if (current?.controlsOpen) closeControls();
       else if (screenFocused) toggleZoom();
       else if (current?.fullscreen) api.command('fullscreen');
     }
     if (event.key === ' ' && event.target === document.body) { event.preventDefault(); api.command('play'); }
+    if (current?.inspecting && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(event.key)) {
+      event.preventDefault(); window.macintosh3D?.turn(event.key);
+    }
   });
 } else {
+  updateRotateButton();
   window.addEventListener('resize', layoutScene);
   layoutScene();
   $('signal-title').textContent = 'DESKTOP EDITION';

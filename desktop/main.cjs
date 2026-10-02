@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { HOME, isYouTubeURL, isAllowedNavigation, destination, sanitizeSettings } = require('./core.cjs');
-const { createSilhouette } = require('./silhouette.cjs');
+const { createSilhouette, createMaskSilhouette } = require('./silhouette.cjs');
 
 app.setName('CRT Tube');
 // Tests use a disposable profile; this switch is ignored in distributed builds.
@@ -26,6 +26,8 @@ let navigationURL = '', loadFailed = false;
 let controlsOpen = false, sceneBounds = null, pointerTimer, pointerIgnored = false;
 let hitsMacintosh;
 let resizeGesture = null;
+let inspecting = false, orbiting = false, modelSilhouette = null;
+let capturePending = false;
 
 function resizeMacintosh(scale, anchor = win.getBounds()) {
   if (!win || win.isDestroyed() || win.isFullScreen()) return;
@@ -58,7 +60,7 @@ function state() {
   const contents = screen?.webContents;
   const alive = contents && !contents.isDestroyed();
   return {
-    ...settings, powered, ready, loading, error, effectError, controlsOpen,
+    ...settings, powered, ready, loading, error, effectError, controlsOpen, inspecting,
     title: alive ? contents.getTitle().replace(/ - YouTube$/, '') || 'YouTube' : 'YouTube',
     url: alive ? contents.getURL() : HOME,
     canGoBack: alive ? contents.navigationHistory.canGoBack() : false,
@@ -73,7 +75,8 @@ function publish() {
 
 function syncVisibility() {
   if (!screen || screen.webContents.isDestroyed()) return;
-  screen.setVisible(powered && ready && !error && !controlsOpen);
+  screen.webContents.setBackgroundThrottling(!inspecting);
+  screen.setVisible(powered && ready && !error && !controlsOpen && !inspecting);
   screen.webContents.setAudioMuted(!powered || settings.muted);
 }
 
@@ -93,6 +96,7 @@ async function applySettings() {
 }
 
 async function tune(input) {
+  inspecting = false; orbiting = false; modelSilhouette = null;
   controlsOpen = false;
   powered = true;
   error = null;
@@ -111,11 +115,24 @@ function openExternal(url) {
 async function command(value) {
   if (!screen || screen.webContents.isDestroyed()) return state();
   const contents = screen.webContents;
+  if (['home', 'back', 'forward', 'reload', 'power', 'focus-search', 'zoom', 'front-view'].includes(value)) {
+    inspecting = false; orbiting = false; modelSilhouette = null;
+    syncVisibility();
+  }
   if (['home', 'back', 'forward', 'reload', 'power', 'zoom'].includes(value)) {
     controlsOpen = false;
     syncVisibility();
   }
   switch (value) {
+    case 'inspect':
+      if (inspecting) return command('front-view');
+      win.webContents.send('tube:inspect');
+      break;
+    case 'show-3d':
+      inspecting = true; controlsOpen = false;
+      syncVisibility(); win.webContents.focus();
+      break;
+    case 'front-view': break;
     case 'back': if (contents.navigationHistory.canGoBack()) contents.navigationHistory.goBack(); break;
     case 'forward': if (contents.navigationHistory.canGoForward()) contents.navigationHistory.goForward(); break;
     case 'home': void tune(''); break;
@@ -157,6 +174,7 @@ async function command(value) {
         { label: 'Search & Picture Controls…', click: () => void command('focus-search') },
         { label: 'Play / Pause', click: () => void command('play') },
         { label: 'Enlarge / Restore Screen', click: () => void command('zoom') },
+        { label: inspecting ? 'Return to Screen' : 'Rotate Macintosh in 3D', click: () => void command('inspect') },
         { label: 'Macintosh Size', submenu: [
           { label: 'Larger', click: () => void command('size-up') },
           { label: 'Smaller', click: () => void command('size-down') },
@@ -205,7 +223,33 @@ ipcMain.on('tube:screen', (event, bounds) => {
 ipcMain.on('tube:scene', (event, bounds) => {
   if (!trusted(event) || !bounds || !['x', 'y', 'width', 'height'].every(key => Number.isFinite(bounds[key]))) return;
   if (bounds.width <= 0 || bounds.height <= 0) return;
-  sceneBounds = bounds;
+  const control = bounds.rotateControl;
+  const validControl = control && ['x', 'y', 'width', 'height'].every(key => Number.isFinite(control[key])) && control.width > 0 && control.height > 0;
+  sceneBounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, rotateControl: validControl ? control : null };
+});
+ipcMain.on('tube:hit-mask', (event, mask) => {
+  if (!trusted(event)) return;
+  if (mask === null) { modelSilhouette = null; return; }
+  const silhouette = createMaskSilhouette(mask);
+  if (silhouette) modelSilhouette = silhouette;
+});
+ipcMain.on('tube:orbit-gesture', (event, active) => {
+  if (!trusted(event) || typeof active !== 'boolean') return;
+  orbiting = inspecting && active;
+  if (orbiting) { pointerIgnored = false; win.setIgnoreMouseEvents(false); }
+  else updatePointerPassthrough();
+});
+ipcMain.handle('tube:capture-screen', async event => {
+  if (!trusted(event) || !inspecting || !powered || !ready || error || capturePending || !win.isVisible() || win.isMinimized()) return null;
+  const contents = screen?.webContents;
+  if (!contents || contents.isDestroyed()) return null;
+  capturePending = true;
+  try {
+    const image = await contents.capturePage(undefined, { stayHidden: false, stayAwake: false });
+    if (!inspecting || image.isEmpty()) return null;
+    return image.resize({ width: 558 }).toDataURL();
+  } catch { return null; }
+  finally { capturePending = false; }
 });
 ipcMain.on('tube:resize', (event, input) => {
   if (!trusted(event) || !input || typeof input !== 'object') return;
@@ -225,10 +269,14 @@ ipcMain.on('tube:resize', (event, input) => {
 });
 
 function updatePointerPassthrough() {
-  if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized() || !sceneBounds || resizeGesture) return;
+  if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized() || !sceneBounds || resizeGesture || orbiting) return;
   const cursor = desktopScreen.getCursorScreenPoint();
   const windowBounds = win.getContentBounds();
-  const ignored = !hitsMacintosh({ x: cursor.x - windowBounds.x, y: cursor.y - windowBounds.y }, sceneBounds);
+  const point = { x: cursor.x - windowBounds.x, y: cursor.y - windowBounds.y };
+  const control = sceneBounds.rotateControl;
+  const overRotateControl = control && point.x >= control.x && point.x < control.x + control.width && point.y >= control.y && point.y < control.y + control.height;
+  const hitTest = inspecting && modelSilhouette ? modelSilhouette : hitsMacintosh;
+  const ignored = !overRotateControl && !hitTest(point, sceneBounds);
   if (ignored !== pointerIgnored) {
     pointerIgnored = ignored;
     win.setIgnoreMouseEvents(ignored, { forward: true });
@@ -238,6 +286,7 @@ function updatePointerPassthrough() {
 function createWindow() {
   powered = true; ready = false; loading = true; error = null;
   controlsOpen = false; sceneBounds = null; pointerIgnored = false; resizeGesture = null;
+  inspecting = false; orbiting = false; modelSilhouette = null;
   const { width, height } = desktopScreen.getPrimaryDisplay().workAreaSize;
   const scale = Math.min(1, (width - 40) / 820, (height - 30) / 690);
   win = new BrowserWindow({
@@ -333,8 +382,8 @@ function createWindow() {
   contents.on('enter-html-full-screen', () => win?.setFullScreen(true));
   win.on('enter-full-screen', publish);
   win.on('leave-full-screen', publish);
-  win.on('blur', stopResizing);
-  win.on('hide', stopResizing);
+  win.on('blur', () => { orbiting = false; stopResizing(); });
+  win.on('hide', () => { orbiting = false; stopResizing(); });
   win.on('close', saveSettings);
   win.on('closed', () => {
     clearInterval(pointerTimer);
@@ -358,6 +407,7 @@ function installMenu() {
     { label: 'TV', submenu: [
       { label: 'Search YouTube…', accelerator: 'CmdOrCtrl+L', click: () => void command('focus-search') },
       { label: 'Enlarge / Restore Screen', accelerator: 'CmdOrCtrl+Shift+Z', click: () => void command('zoom') },
+      { label: 'Rotate Macintosh / Return to Screen', accelerator: 'CmdOrCtrl+Shift+3', click: () => void command('inspect') },
       { label: 'Larger Macintosh', accelerator: 'CmdOrCtrl+Plus', click: () => void command('size-up') },
       { label: 'Smaller Macintosh', accelerator: 'CmdOrCtrl+-', click: () => void command('size-down') },
       { label: 'Actual Macintosh Size', accelerator: 'CmdOrCtrl+0', click: () => void command('size-reset') },
